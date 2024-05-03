@@ -1,0 +1,49 @@
+blueprint:
+  name: Set Media Player Volume
+  description: Set media player volume if it goes above a certain level.
+  domain: automation
+  input:
+    media_player_entity:
+      name: Media Player Entity
+      description: The entity ID of the media player.
+      selector:
+        entity:
+          domain: media_player
+    volume_limit:
+      name: Volume Above
+      description: The volume level above which the volume will be set.
+      default: 0.4
+      selector:
+        number:
+          min: 0
+          max: 1
+          step: 0.05
+          unit_of_measurement: "%"
+mode: restart
+max_exceeded: silent
+
+trigger:
+- platform: state
+  entity_id: !input media_player_entity
+  attribute: volume_level
+- platform: state
+  entity_id: !input media_player_entity
+  from:
+  - "paused"
+  - "buffering"
+  - "off"
+  to: "playing"
+
+condition:
+  condition: numeric_state
+  entity_id: !input media_player_entity
+  attribute: volume_level
+  above: !input volume_limit
+
+action:
+  service: media_player.volume_set
+  target:
+    entity_id: !input media_player_entity
+  data:
+    volume_level: !input volume_limit
+

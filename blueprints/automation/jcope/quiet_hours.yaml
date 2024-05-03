@@ -1,0 +1,75 @@
+blueprint:
+  name: Quiet Hours
+  description: "Between the given hours only allow specified artists"
+  domain: automation
+  input:
+    watch_entity:
+      name: Target Entity
+      description: Which entity should quiet hours be applied to?
+      selector:
+        entity:
+          domain: media_player
+          device_class: speaker
+    not_before:
+      name: Disallow Before
+      default: '06:00:00'
+      selector:
+        time:
+    not_after:
+      name: Disallow After
+      default: '19:00:00'
+      selector:
+        time:
+    allowed_artists:
+      name: Allowed Artists
+      description: List of artists that are allowed to play during quiet hours
+      default: ""
+      selector:
+        text:
+    case_sensitive:
+      name: Case Sensitive
+      description: Should the artist comparison be case sensitive?
+      default: false
+      selector:
+        boolean:
+
+variables:
+  watch_entity: !input watch_entity
+  allowed_artists: !input allowed_artists
+  case_sensitive: !input case_sensitive
+
+trigger:
+  - platform: state
+    entity_id: !input watch_entity
+    to: null
+    from: null
+
+condition:
+  - condition: and
+    conditions:
+      - condition: or
+        conditions:
+          - condition: time
+            alias: Not Before
+            before: !input not_before
+          - condition: time
+            alias: Not After
+            after: !input not_after
+      - condition: template
+        value_template: >-
+          {% if allowed_artists -%}
+           {% set condition_passed = true -%}
+           {% for artist in allowed_artists -%}
+             {% if (artist.strip() | lower) in state_attr(watch_entity, 'media_artist') | lower -%}
+               {% set condition_passed = false -%}
+             {% endif -%}
+           {% endfor -%}
+           {{ condition_passed }}
+          {% else -%}
+           true
+          {% endif%}
+action:
+  - service: media_player.media_pause
+    entity_id: !input watch_entity
+mode: queued
+
