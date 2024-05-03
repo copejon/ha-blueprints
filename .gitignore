@@ -1,2 +1,4 @@
 *
-!blueprints/*
+!blueprints/automation/jcope/*
+!blueprints/script/jcope*
+!script/jcope*
